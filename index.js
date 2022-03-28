@@ -16,4 +16,5 @@ var pionjs = ffi.Library("./go-src/pion_handler.so", {
 
 console.log(pionjs.SpawnConnection('[{"urls":["stun:stun.l.google.com:19302"]}]'))
 
-module.exports = pionjs;
+module.SpawnConnection = pionjs.SpawnConnection;
+module.SetRemoteDescription = pionjs.SetRemoteDescription;
