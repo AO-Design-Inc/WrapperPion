@@ -129,6 +129,22 @@ func SetRemoteDescription(remoteDescString JSONString) bool {
 	return true
 }
 
+//export AddIceCandidate
+func AddIceCandidate(iceCandidateString *C.char) bool {
+  var candidate webrtc.ICECandidateInit
+  if err := json.Unmarshal([]byte(C.GoString(iceCandidateString)), &candidate); err != nil {
+    return false
+  }
+
+  if err := peerConnection.AddICECandidate(candidate); err != nil {
+    panic(err)
+  }
+
+  return true
+}
+
+
+
 /*
 func remoteSetter(desc *webrtc.SessionDescription) {
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
