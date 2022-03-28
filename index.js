@@ -27,10 +27,10 @@ if (isWin) {
 
 var pionjs = ffi.Library(libpath, {
   SpawnConnection: ["string", ["string"]],
-  SetRemoteDescription: ["string", ["string"]]
+  SetRemoteDescription: ["string", ["bool"]],
+  AddIceCandidate: ["string", ["bool"]]
 });
 
-console.log(pionjs.SpawnConnection('[{"urls":["stun:stun.l.google.com:19302"]}]'))
 
 
 module.exports = pionjs
