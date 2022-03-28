@@ -11,6 +11,7 @@ const file = join(dirname(fileURLToPath(import.meta.url)), "../dist/regodit.dll"
 */
 
 var isWin = process.platform === "win32";
+var isDarwin = process.platform === "darwin";
 let goutpath = __dirname + "/go-src/pion_handler.so";
 let libpath
 if (isWin) {
@@ -20,9 +21,16 @@ if (isWin) {
     if (err) throw err
     console.log("renamed path!")
   });
-} else {
-  goutpath = __dirname + "/go-src/pion_handler.so"
-  libpath = __dirname + "/go-src/pion_handler.so"
+} else if (isDarwin) {
+  goutpath = __dirname + "/go-src/pion_handler.so";
+  libpath = __dirname + "/go-src/pion_handler.dylib";
+  fs.rename(goutpath, libpath, (err) => {
+    if (err) throw err;
+    console.log("renamed path!");
+  });
+} else { 
+  goutpath = __dirname + "/go-src/pion_handler.so";
+  libpath = __dirname + "/go-src/pion_handler.so";
 }
 
 var pionjs = ffi.Library(libpath, {
@@ -33,4 +41,4 @@ var pionjs = ffi.Library(libpath, {
 
 
 
-module.exports = pionjs
+module.exports = pionjs;
