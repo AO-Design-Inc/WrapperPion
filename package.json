@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cd go-src && go build -o pion_handler.so -buildmode=c-shared pion_handler.go"
+    "build": "cd go-src && go build -o pion_handler.so -buildmode=c-shared pion_handler.go",
+    "install": "npm run build"
   },
   "author": "",
   "license": "ISC",
