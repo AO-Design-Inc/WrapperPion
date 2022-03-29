@@ -37,12 +37,12 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		panic(err)
 	}
 	//h264Params.BitRate = 5_000_000
-  vp9Params.BitRate = 5_000_000
+  vp9Params.BitRate = 500_000
   //x264Params.BitRate = 2_000_000
   //x264Params.Preset = x264.PresetVeryfast
   vp9Params.Deadline = 100 * time.Millisecond
   vp9Params.LagInFrames = 15
-  vp9Params.KeyFrameInterval = 10
+  vp9Params.KeyFrameInterval = 60
 
 	codecSelector := mediadevices.NewCodecSelector(
 		//mediadevices.WithVideoEncoders(&h264Params),
