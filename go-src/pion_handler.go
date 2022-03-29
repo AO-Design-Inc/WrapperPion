@@ -1,4 +1,3 @@
-// a handler for pion
 package main
 
 /*
@@ -14,23 +13,45 @@ import (
 
 	//"github.com/pion/mediadevices/pkg/codec/vpx"
 	"github.com/pion/mediadevices/pkg/codec/openh264"
-  //"github.com/pion/mediadevices/pkg/codec/x264"
+	//"github.com/pion/mediadevices/pkg/codec/x264"
 
 	_ "github.com/pion/mediadevices/pkg/driver/screen"
 
 	"encoding/json"
 	"fmt"
+	"sync"
 )
 
 type JSONString *C.char
-//var peerConnection *webrtc.PeerConnection
-var pc_channel = make(chan *webrtc.PeerConnection, 1)
-var connectionLock = make(chan struct{}, 1)
 
+var peerChannel = make(chan *webrtc.PeerConnection)
+var configChannel = make(chan *webrtc.Configuration)
+var sdpChannel = make(chan *webrtc.SessionDescription)
+var closeChannel = make(chan struct{})
+var remoteSdpChannel = make(chan *webrtc.SessionDescription)
+var iceChannel = make(chan *webrtc.ICECandidateInit)
+var killChannel = make(chan struct{})
+var codecChannel = make(chan *mediadevices.CodecSelector)
+var selectCodec = make(chan struct{})
+var trackChannel = make(chan *webrtc.TrackLocal)
 
-func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
+func addStream(codec *mediadevices.CodecSelector) *mediadevices.MediaStream {
+	stream, err := mediadevices.GetDisplayMedia(mediadevices.MediaStreamConstraints{
+		Video: func(constraint *mediadevices.MediaTrackConstraints) {
+			constraint.FrameFormat = prop.FrameFormat(frame.FormatI420)
+			constraint.FrameRate = prop.Float(120)
+			constraint.Width = prop.Int(1280)
+			constraint.Height = prop.Int(720)
+		},
+		Codec: codec,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return &stream
+}
 
-    
+func getCodec() {
 	h264Params, err := openh264.NewParams()
   //vp9Params, err := vpx.NewVP9Params()
   //vp8Params, err := vpx.NewVP8Params()
@@ -52,28 +73,24 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		//mediadevices.WithVideoEncoders(&vp8Params),
 		//mediadevices.WithVideoEncoders(&x264Params),
 	)
+  codecChannel <- codecSelector
+}
 
+
+func peerLifeCycle() {
+	codec := <-codecChannel
 	mediaEngine := webrtc.MediaEngine{}
-	codecSelector.Populate(&mediaEngine)
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(&mediaEngine))
-  peerConnection, err := api.NewPeerConnection(*config)
-  pc_channel <- peerConnection
-	if err != nil {
-		panic(err)
-	}
+	peerConnection, err := api.NewPeerConnection(*<-configChannel)
+  if err != nil {
+    panic(err)
+  }
+	var connLock sync.Mutex
 
-	stream, err := mediadevices.GetDisplayMedia(mediadevices.MediaStreamConstraints{
-		Video: func(constraint *mediadevices.MediaTrackConstraints) {
-			constraint.FrameFormat = prop.FrameFormat(frame.FormatI420)
-			constraint.FrameRate = prop.Float(120)
-      constraint.Width = prop.Int(1280)
-      constraint.Height = prop.Int(720)
-		},
-		Codec: codecSelector,
-	})
 
+	stream := *addStream(codec)
 	for _, track := range stream.GetTracks() {
-    fmt.Printf("%v\n", track)
+		fmt.Printf("%v\n", track)
 		track.OnEnded(func(err error) {
 			fmt.Printf("Track (ID: %s) ended with error: %v\n",
 				track.ID(), err)
@@ -82,129 +99,89 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		_, err = peerConnection.AddTransceiverFromTrack(track,
 			webrtc.RtpTransceiverInit{
 				Direction: webrtc.RTPTransceiverDirectionSendonly,
-			},
-		)
+			})
 		if err != nil {
 			panic(err)
 		}
-	}
-	if err != nil {
-		panic(err)
+		defer func() {
+			if err := track.Close(); err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		fmt.Printf("Connection State has changed %s \n", connectionState)
-    if connectionState == webrtc.ICEConnectionStateFailed ||
-       connectionState == webrtc.ICEConnectionStateClosed {
-          fmt.Println("now it is time to die");
-          <-connectionLock
-        }
 	})
+
 	offer, err := peerConnection.CreateOffer(nil)
 	if err != nil {
 		panic(err)
 	}
-
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 	if err = peerConnection.SetLocalDescription(offer); err != nil {
 		panic(err)
 	}
 
-	<-gatherComplete
-	offerString, err := json.Marshal(*peerConnection.LocalDescription())
-	cOfferString := C.CString(string(offerString))
-	recvSdp <- cOfferString
+	go func() {
+		for iceCandidate := range iceChannel {
+			connLock.Lock()
+			peerConnection.AddICECandidate(*iceCandidate)
+			connLock.Unlock()
+		}
+	}()
+	defer close(iceChannel)
 
-  //HOLD until close
-  connectionLock <- struct{}{}
-  <-connectionLock
+	<-gatherComplete
+	sdpChannel <- peerConnection.LocalDescription()
+	remoteSdp := <-remoteSdpChannel
+	connLock.Lock()
+	if err := peerConnection.SetRemoteDescription(*remoteSdp); err != nil {
+		panic(err)
+	}
+	connLock.Unlock()
+
+  <-closeChannel
+  connLock.Lock()
+  if err := peerConnection.Close(); err != nil {
+    panic(err)
+  }
+  connLock.Unlock()
 }
 
 //export SpawnConnection
 func SpawnConnection(iceValues JSONString) *C.char {
-  //note if this returns an empty string its waiting
-  select {
-    case connectionLock<-struct{}{}:
-      goto cont
-    default:
-      return C.CString("")
-    }
-  cont:
-  fmt.Println("lucrative")
-	sdpRecv := make(chan *C.char, 1)
 	var iceServers []webrtc.ICEServer
 	if err := json.Unmarshal([]byte(C.GoString(iceValues)), &iceServers); err != nil {
-    return C.CString(err.Error())
+		return C.CString(err.Error())
 	}
-
 
 	config := webrtc.Configuration{
 		ICEServers: iceServers,
 	}
 
-	go peerConnector(&config, sdpRecv)
-
-	
-	return(<-sdpRecv)
-}
-
-//export SetRemoteDescription
-func SetRemoteDescription(remoteDescString JSONString) bool {
-	var desc webrtc.SessionDescription
-	if err := json.Unmarshal([]byte(C.GoString(remoteDescString)), &desc); err != nil {
-		return false
+	select {
+	case configChannel <- &config:
+		offerString, err := json.Marshal(<-sdpChannel)
+		if err != nil {
+			panic(err)
+		}
+		return C.CString(string(offerString))
+	default:
+		panic("wrong state")
 	}
-  //go remoteSetter(&desc)
-  peerConnection := <-pc_channel
-	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
-	<-gatherComplete
-	if err := peerConnection.SetRemoteDescription(desc); err != nil {
-		panic(err)
-	}
-  pc_channel <- peerConnection
-	return true
 }
 
-//export AddIceCandidate
-func AddIceCandidate(iceCandidateString *C.char) bool {
-  peerConnection := <-pc_channel
-  var candidate webrtc.ICECandidateInit
-  if err := json.Unmarshal([]byte(C.GoString(iceCandidateString)), &candidate); err != nil {
-    return false
-  }
-
-  if err := peerConnection.AddICECandidate(candidate); err != nil {
-    panic(err)
-  }
-
-  pc_channel <- peerConnection
-  return true
-}
-
-//export CloseConnection
 func CloseConnection() bool {
-  peerConnection := <-pc_channel 
-  if err := peerConnection.Close(); err != nil {
-    panic(err)
+  select {
+  case closeChannel <- struct{}{}:
+    return true
+  default:
+    panic("wrong state")
   }
-
-  return true
 }
 
-  
-
-
-
-
-/*
-func remoteSetter(desc *webrtc.SessionDescription) {
-	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
-	<-gatherComplete
-	if err := peerConnection.SetRemoteDescription(*desc); err != nil {
-		panic(err)
-	}
+func main() {
+  go getCodec()
+  peerLifeCycle()
 }
-*/
-
-
-func main() {}

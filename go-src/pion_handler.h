@@ -19,7 +19,7 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 /* Start of preamble from import "C" comments.  */
 
 
-#line 4 "pion_handler.go"
+#line 3 "pion_handler.go"
 
 #include <stdlib.h>
 
@@ -74,9 +74,6 @@ extern "C" {
 #endif
 
 extern char* SpawnConnection(char* iceValues);
-extern GoUint8 SetRemoteDescription(char* remoteDescString);
-extern GoUint8 AddIceCandidate(char* iceCandidateString);
-extern GoUint8 CloseConnection();
 
 #ifdef __cplusplus
 }
