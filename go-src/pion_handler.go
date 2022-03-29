@@ -37,12 +37,12 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		panic(err)
 	}
 	//h264Params.BitRate = 5_000_000
-  vp8Params.BitRate = 5_000_000
+  vp8Params.BitRate = 10_000_000
   //x264Params.BitRate = 2_000_000
   //x264Params.Preset = x264.PresetVeryfast
   vp8Params.LagInFrames = 0
   vp8Params.KeyFrameInterval = 200
-  vp8Params.RateControlEndUsage = vpx.RateControlCQ
+  vp8Params.RateControlEndUsage = vpx.RateControlVBR
 
 	codecSelector := mediadevices.NewCodecSelector(
 		//mediadevices.WithVideoEncoders(&h264Params),
@@ -61,7 +61,7 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 	stream, err := mediadevices.GetDisplayMedia(mediadevices.MediaStreamConstraints{
 		Video: func(constraint *mediadevices.MediaTrackConstraints) {
 			constraint.FrameFormat = prop.FrameFormat(frame.FormatI420)
-			constraint.FrameRate = prop.Float(60)
+			constraint.FrameRate = prop.Float(120)
       constraint.Width = prop.Int(1280)
       constraint.Height = prop.Int(720)
 		},
