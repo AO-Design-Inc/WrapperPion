@@ -82,6 +82,7 @@ func peerLifeCycle() {
 	codec := <-codecChannel
   fmt.Println("huh?")
 	mediaEngine := webrtc.MediaEngine{}
+  codec.Populate(&mediaEngine)
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(&mediaEngine))
 	peerConnection, err := api.NewPeerConnection(*<-configChannel)
 	if err != nil {
