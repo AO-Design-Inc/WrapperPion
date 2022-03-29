@@ -12,8 +12,9 @@ import (
 	"github.com/pion/mediadevices/pkg/prop"
 	"github.com/pion/webrtc/v3"
 
-	"github.com/pion/mediadevices/pkg/codec/vpx"
+	//"github.com/pion/mediadevices/pkg/codec/vpx"
 	//"github.com/pion/mediadevices/pkg/codec/openh264"
+  "github.com/pion/mediadevices/pkg/codec/x264"
 
 	_ "github.com/pion/mediadevices/pkg/driver/screen"
 
@@ -29,16 +30,20 @@ var connectionLock = make(chan struct{}, 1)
 func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
     
 	//h264Params, err := openh264.NewParams()
-  vp9Params, err := vpx.NewVP9Params()
+  //vp9Params, err := vpx.NewVP9Params()
+  x264Params, err := x264.NewParams()
 	if err != nil {
 		panic(err)
 	}
 	//h264Params.BitRate = 5_000_000
-  vp9Params.BitRate = 5_000_000
+  //vp9Params.BitRate = 5_000_000
+  x264Params.BitRate = 2_000_000
+  x264Params.Preset = x264.PresetUltrafast
 
 	codecSelector := mediadevices.NewCodecSelector(
 		//mediadevices.WithVideoEncoders(&h264Params),
-		mediadevices.WithVideoEncoders(&vp9Params),
+		//mediadevices.WithVideoEncoders(&vp9Params),
+		mediadevices.WithVideoEncoders(&x264Params),
 	)
 
 	mediaEngine := webrtc.MediaEngine{}
