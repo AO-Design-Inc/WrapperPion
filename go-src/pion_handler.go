@@ -30,21 +30,22 @@ var connectionLock = make(chan struct{}, 1)
 func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
     
 	//h264Params, err := openh264.NewParams()
-  vp9Params, err := vpx.NewVP9Params()
+  //vp9Params, err := vpx.NewVP9Params()
+  vp8Params, err := vpx.NewVP8Params()
   //x264Params, err := x264.NewParams()
 	if err != nil {
 		panic(err)
 	}
 	//h264Params.BitRate = 5_000_000
-  vp9Params.BitRate = 100_000
+  vp8Params.BitRate = 1_000_000
   //x264Params.BitRate = 2_000_000
   //x264Params.Preset = x264.PresetVeryfast
-  vp9Params.LagInFrames = 0
-  vp9Params.KeyFrameInterval = 60
+  vp8Params.LagInFrames = 0
+  vp8Params.KeyFrameInterval = 10
 
 	codecSelector := mediadevices.NewCodecSelector(
 		//mediadevices.WithVideoEncoders(&h264Params),
-		mediadevices.WithVideoEncoders(&vp9Params),
+		mediadevices.WithVideoEncoders(&vp8Params),
 		//mediadevices.WithVideoEncoders(&x264Params),
 	)
 
