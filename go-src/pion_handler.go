@@ -20,7 +20,6 @@ import (
 
 	"encoding/json"
 	"fmt"
-  "time"
 )
 
 type JSONString *C.char
@@ -37,12 +36,11 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		panic(err)
 	}
 	//h264Params.BitRate = 5_000_000
-  vp9Params.BitRate = 500_000
+  vp9Params.BitRate = 5_000_000
   //x264Params.BitRate = 2_000_000
   //x264Params.Preset = x264.PresetVeryfast
-  vp9Params.Deadline = 100 * time.Millisecond
-  vp9Params.LagInFrames = 15
-  vp9Params.KeyFrameInterval = 60
+  vp9Params.LagInFrames = 0
+  vp9Params.KeyFrameInterval = 10
 
 	codecSelector := mediadevices.NewCodecSelector(
 		//mediadevices.WithVideoEncoders(&h264Params),
@@ -62,8 +60,8 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 		Video: func(constraint *mediadevices.MediaTrackConstraints) {
 			constraint.FrameFormat = prop.FrameFormat(frame.FormatI420)
 			constraint.FrameRate = prop.Float(60)
-      constraint.Width = prop.Int(1920)
-      constraint.Height = prop.Int(1080)
+      constraint.Width = prop.Int(1280)
+      constraint.Height = prop.Int(720)
 		},
 		Codec: codecSelector,
 	})
