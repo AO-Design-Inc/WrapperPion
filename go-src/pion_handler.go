@@ -73,10 +73,12 @@ func getCodec() {
 		//mediadevices.WithVideoEncoders(&vp8Params),
 		//mediadevices.WithVideoEncoders(&x264Params),
 	)
+  fmt.Println("here?")
 	codecChannel <- codecSelector
 }
 
 func peerLifeCycle() {
+  fmt.Println("it blocketh here?")
 	codec := <-codecChannel
   fmt.Println("huh?")
 	mediaEngine := webrtc.MediaEngine{}
@@ -211,6 +213,7 @@ func CloseConnection() bool {
 }
 
 func main() {
+  fmt.Println("sdlfkj")
 	go getCodec()
 	peerLifeCycle()
 }
