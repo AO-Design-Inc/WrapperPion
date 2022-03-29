@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cd go-src && go build -o pion_handler.so -buildmode=c-shared pion_handler.go",
-    "preinstall": "npm run build"
+    "preinstall": "npm run build",
+    "postinstall": "node rename-path.js"
   },
   "author": "",
   "license": "ISC",
