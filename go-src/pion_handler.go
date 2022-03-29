@@ -104,6 +104,8 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
     }
   }()
   connectionLock <- struct{}{}
+
+  fmt.Println("now it is time to die");
   <-connectionLock
 }
 
