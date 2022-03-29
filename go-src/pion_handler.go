@@ -39,7 +39,7 @@ func addStream(codec *mediadevices.CodecSelector) *mediadevices.MediaStream {
 	stream, err := mediadevices.GetDisplayMedia(mediadevices.MediaStreamConstraints{
 		Video: func(constraint *mediadevices.MediaTrackConstraints) {
 			constraint.FrameFormat = prop.FrameFormat(frame.FormatI420)
-			constraint.FrameRate = prop.Float(120)
+			constraint.FrameRate = prop.Float(60)
 			constraint.Width = prop.Int(1280)
 			constraint.Height = prop.Int(720)
 		},
@@ -59,7 +59,7 @@ func getCodec() {
 	if err != nil {
 		panic(err)
 	}
-	h264Params.BitRate = 5_000_000
+	h264Params.BitRate = 500_000
 	h264Params.KeyFrameInterval = 200
 	//vp8Params.BitRate = 10_000_000
 	//x264Params.BitRate = 2_000_000
