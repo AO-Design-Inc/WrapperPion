@@ -181,6 +181,9 @@ func SetRemoteDescription(remoteDescString JSONString) bool {
 
 //export SpawnConnection
 func SpawnConnection(iceValues JSONString) *C.char {
+  fmt.Println("sdlfkj")
+	go getCodec()
+	peerLifeCycle()
 	var iceServers []webrtc.ICEServer
 	if err := json.Unmarshal([]byte(C.GoString(iceValues)), &iceServers); err != nil {
 		return C.CString(err.Error())
@@ -212,8 +215,4 @@ func CloseConnection() bool {
 	}
 }
 
-func main() {
-  fmt.Println("sdlfkj")
-	go getCodec()
-	peerLifeCycle()
-}
+func main() { }
