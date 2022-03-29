@@ -23,9 +23,11 @@ import (
 
 type JSONString *C.char
 var peerConnection *webrtc.PeerConnection
+var connectionLock = make(chan struct{}, 1)
 
 
 func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
+    
 	h264Params, err := openh264.NewParams()
 	if err != nil {
 		panic(err)
@@ -95,14 +97,21 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 
 //export SpawnConnection
 func SpawnConnection(iceValues JSONString) *C.char {
+  //note if this returns an empty string its waiting
+  select {
+    case connectionLock<-struct{}{}:
+      goto cont
+    default:
+      return C.CString("")
+    }
+  cont:
   fmt.Println("lucrative")
 	sdpRecv := make(chan *C.char, 1)
 	var iceServers []webrtc.ICEServer
 	if err := json.Unmarshal([]byte(C.GoString(iceValues)), &iceServers); err != nil {
-		panic(err)
+    return C.CString(err.Error())
 	}
 
-  fmt.Println("tiddie")
 
 	config := webrtc.Configuration{
 		ICEServers: iceServers,
@@ -142,6 +151,25 @@ func AddIceCandidate(iceCandidateString *C.char) bool {
 
   return true
 }
+
+//export CloseConnection
+func CloseConnection() bool {
+  select {
+  case <-connectionLock:
+    goto cont
+  default:
+    return false
+  }
+  cont:
+  if err := peerConnection.Close(); err != nil {
+    panic(err)
+  }
+
+  return true
+}
+
+  
+
 
 
 

@@ -76,6 +76,7 @@ extern "C" {
 extern char* SpawnConnection(char* iceValues);
 extern GoUint8 SetRemoteDescription(char* remoteDescString);
 extern GoUint8 AddIceCandidate(char* iceCandidateString);
+extern GoUint8 CloseConnection();
 
 #ifdef __cplusplus
 }

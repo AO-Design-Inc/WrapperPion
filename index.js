@@ -23,9 +23,12 @@ if (isWin) {
 
 var pionjs = ffi.Library(libpath, {
   SpawnConnection: ["string", ["string"]],
-  SetRemoteDescription: ["string", ["bool"]],
-  AddIceCandidate: ["string", ["bool"]]
+  SetRemoteDescription: ["bool", ["string"]],
+  AddIceCandidate: ["bool", ["string"]],
+  CloseConnection: ["bool", []]
 });
+
+console.log(pionjs.CloseConnection())
 
 
 
