@@ -98,8 +98,10 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
   //HOLD until close
 
   go func() {
-    <- time.After(2 * time.Second)
-    fmt.Printf("still alive!")
+    for {
+      <-time.After(2 * time.Second)
+      fmt.Printf("still alive!")
+    }
   }()
   connectionLock <- struct{}{}
   <-connectionLock
