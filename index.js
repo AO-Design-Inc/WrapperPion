@@ -1,10 +1,11 @@
 const ffi = require('ffi-napi');
-//const fs = require('fs');
+const fs = require('fs');
 //const ref = require('ref-napi');
 //const Struct = require('ref-struct-di')(ref);
 
 var isWin = process.platform === "win32";
 var isDarwin = process.platform === "darwin";
+var isElectron =  (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron)
 
 /* adapt ffi code
  * 
@@ -19,6 +20,12 @@ if (isWin) {
 	libpath = __dirname + "/go-src/pion_handler.dylib";
 } else {
 	libpath = __dirname + "/go-src/pion_handler.so";
+}
+
+if isElectron {
+  if (!fs.existsSync(libpath)) {
+    libpath = libpath.replace('app.asar', 'app.asar.unpacked')
+  }
 }
 
 var pionjs = ffi.Library(libpath, {
