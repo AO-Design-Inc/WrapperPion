@@ -19,7 +19,6 @@ import (
 
 	"encoding/json"
 	"fmt"
-  "time"
 )
 
 type JSONString *C.char
@@ -79,6 +78,11 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 
 	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		fmt.Printf("Connection State has changed %s \n", connectionState)
+    if connectionState == webrtc.ICEConnectionStateFailed ||
+       connectionState == webrtc.ICEConnectionStateClosed {
+          fmt.Println("now it is time to die");
+          <-connectionLock
+        }
 	})
 	offer, err := peerConnection.CreateOffer(nil)
 	if err != nil {
@@ -96,16 +100,7 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 	recvSdp <- cOfferString
 
   //HOLD until close
-
-  go func() {
-    for {
-      <-time.After(2 * time.Second)
-      fmt.Printf("still alive!")
-    }
-  }()
   connectionLock <- struct{}{}
-
-  fmt.Println("now it is time to die");
   <-connectionLock
 }
 
@@ -168,13 +163,6 @@ func AddIceCandidate(iceCandidateString *C.char) bool {
 
 //export CloseConnection
 func CloseConnection() bool {
-  select {
-  case <-connectionLock:
-    goto cont
-  default:
-    return false
-  }
-  cont:
   if err := peerConnection.Close(); err != nil {
     panic(err)
   }
