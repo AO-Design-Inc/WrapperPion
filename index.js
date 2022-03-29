@@ -23,8 +23,9 @@ if (isWin) {
 }
 
 if (isElectron) {
-  if (!fs.existsSync(libpath)) {
-    libpath = libpath.replace('app.asar', 'app.asar.unpacked')
+  let possibleLibPath = libpath.replace('app.asar', 'app.asar.unpacked')
+  if (fs.existsSync(possibleLibPath)) {
+    libpath = possibleLibPath
   }
 }
 
