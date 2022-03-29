@@ -53,40 +53,38 @@ func addStream(codec *mediadevices.CodecSelector) *mediadevices.MediaStream {
 
 func getCodec() {
 	h264Params, err := openh264.NewParams()
-  //vp9Params, err := vpx.NewVP9Params()
-  //vp8Params, err := vpx.NewVP8Params()
-  //x264Params, err := x264.NewParams()
+	//vp9Params, err := vpx.NewVP9Params()
+	//vp8Params, err := vpx.NewVP8Params()
+	//x264Params, err := x264.NewParams()
 	if err != nil {
 		panic(err)
 	}
 	h264Params.BitRate = 5_000_000
-  h264Params.KeyFrameInterval = 200
-  //vp8Params.BitRate = 10_000_000
-  //x264Params.BitRate = 2_000_000
-  //x264Params.Preset = x264.PresetVeryfast
-  //vp8Params.LagInFrames = 0
-  //vp8Params.KeyFrameInterval = 200
-  //vp8Params.RateControlEndUsage = vpx.RateControlVBR
+	h264Params.KeyFrameInterval = 200
+	//vp8Params.BitRate = 10_000_000
+	//x264Params.BitRate = 2_000_000
+	//x264Params.Preset = x264.PresetVeryfast
+	//vp8Params.LagInFrames = 0
+	//vp8Params.KeyFrameInterval = 200
+	//vp8Params.RateControlEndUsage = vpx.RateControlVBR
 
 	codecSelector := mediadevices.NewCodecSelector(
 		mediadevices.WithVideoEncoders(&h264Params),
 		//mediadevices.WithVideoEncoders(&vp8Params),
 		//mediadevices.WithVideoEncoders(&x264Params),
 	)
-  codecChannel <- codecSelector
+	codecChannel <- codecSelector
 }
-
 
 func peerLifeCycle() {
 	codec := <-codecChannel
 	mediaEngine := webrtc.MediaEngine{}
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(&mediaEngine))
 	peerConnection, err := api.NewPeerConnection(*<-configChannel)
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 	var connLock sync.Mutex
-
 
 	stream := *addStream(codec)
 	for _, track := range stream.GetTracks() {
@@ -141,12 +139,41 @@ func peerLifeCycle() {
 	}
 	connLock.Unlock()
 
-  <-closeChannel
-  connLock.Lock()
-  if err := peerConnection.Close(); err != nil {
-    panic(err)
-  }
-  connLock.Unlock()
+	<-closeChannel
+	connLock.Lock()
+	if err := peerConnection.Close(); err != nil {
+		panic(err)
+	}
+	connLock.Unlock()
+}
+
+//export AddIceCandidate
+func AddIceCandidate(iceCandidateString *C.char) bool {
+	var candidate webrtc.ICECandidateInit
+	if err := json.Unmarshal([]byte(C.GoString(iceCandidateString)), &candidate); err != nil {
+		return false
+	}
+
+	select {
+	case iceChannel <- &candidate:
+		return true
+	default:
+		return false
+	}
+}
+
+//export SetRemoteDescription
+func SetRemoteDescription(remoteDescString JSONString) bool {
+	var desc webrtc.SessionDescription
+	if err := json.Unmarshal([]byte(C.GoString(remoteDescString)), &desc); err != nil {
+		return false
+	}
+	select {
+	case remoteSdpChannel <- &desc:
+		return true
+	default:
+		panic("wrong state")
+	}
 }
 
 //export SpawnConnection
@@ -172,16 +199,17 @@ func SpawnConnection(iceValues JSONString) *C.char {
 	}
 }
 
+//export CloseConnection
 func CloseConnection() bool {
-  select {
-  case closeChannel <- struct{}{}:
-    return true
-  default:
-    panic("wrong state")
-  }
+	select {
+	case closeChannel <- struct{}{}:
+		return true
+	default:
+		panic("wrong state")
+	}
 }
 
 func main() {
-  go getCodec()
-  peerLifeCycle()
+	go getCodec()
+	peerLifeCycle()
 }
