@@ -19,6 +19,7 @@ import (
 
 	"encoding/json"
 	"fmt"
+  "time"
 )
 
 type JSONString *C.char
@@ -95,6 +96,11 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 	recvSdp <- cOfferString
 
   //HOLD until close
+
+  go func() {
+    <- time.After(2 * time.Second)
+    fmt.Printf("still alive!")
+  }()
   connectionLock <- struct{}{}
   <-connectionLock
 }
