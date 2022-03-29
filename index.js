@@ -5,7 +5,7 @@ const fs = require('fs');
 
 var isWin = process.platform === "win32";
 var isDarwin = process.platform === "darwin";
-var isElectron =  (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron)
+var isElectron = (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron)
 
 /* adapt ffi code
  * 
@@ -22,7 +22,7 @@ if (isWin) {
 	libpath = __dirname + "/go-src/pion_handler.so";
 }
 
-if isElectron {
+if (isElectron) {
   if (!fs.existsSync(libpath)) {
     libpath = libpath.replace('app.asar', 'app.asar.unpacked')
   }
