@@ -28,7 +28,6 @@ var pionjs = ffi.Library(libpath, {
   CloseConnection: ["bool", []]
 });
 
-console.log(pionjs.CloseConnection())
 
 
 
