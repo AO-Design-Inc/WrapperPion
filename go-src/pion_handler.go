@@ -93,6 +93,10 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 	offerString, err := json.Marshal(*peerConnection.LocalDescription())
 	cOfferString := C.CString(string(offerString))
 	recvSdp <- cOfferString
+
+  //HOLD until close
+  connectionLock <- struct{}{}
+  <-connectionLock
 }
 
 //export SpawnConnection
