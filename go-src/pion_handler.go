@@ -59,7 +59,7 @@ func getCodec() {
 	if err != nil {
 		panic(err)
 	}
-	h264Params.BitRate = 500_000
+	h264Params.BitRate = 5_000_000
 	h264Params.KeyFrameInterval = 200
 	//vp8Params.BitRate = 10_000_000
 	//x264Params.BitRate = 2_000_000
