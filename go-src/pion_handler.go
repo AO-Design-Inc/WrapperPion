@@ -23,11 +23,13 @@ import (
 )
 
 type JSONString *C.char
-var peerConnection *webrtc.PeerConnection
+//var peerConnection *webrtc.PeerConnection
+var pc_channel = make(chan *webrtc.PeerConnection, 1)
 var connectionLock = make(chan struct{}, 1)
 
 
 func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
+
     
 	h264Params, err := openh264.NewParams()
   //vp9Params, err := vpx.NewVP9Params()
@@ -54,7 +56,8 @@ func peerConnector(config *webrtc.Configuration, recvSdp chan *C.char) {
 	mediaEngine := webrtc.MediaEngine{}
 	codecSelector.Populate(&mediaEngine)
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(&mediaEngine))
-	peerConnection, err = api.NewPeerConnection(*config)
+  peerConnection, err := api.NewPeerConnection(*config)
+  pc_channel <- peerConnection
 	if err != nil {
 		panic(err)
 	}
@@ -152,16 +155,19 @@ func SetRemoteDescription(remoteDescString JSONString) bool {
 		return false
 	}
   //go remoteSetter(&desc)
+  peerConnection := <-pc_channel
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 	<-gatherComplete
 	if err := peerConnection.SetRemoteDescription(desc); err != nil {
 		panic(err)
 	}
+  pc_channel <- peerConnection
 	return true
 }
 
 //export AddIceCandidate
 func AddIceCandidate(iceCandidateString *C.char) bool {
+  peerConnection := <-pc_channel
   var candidate webrtc.ICECandidateInit
   if err := json.Unmarshal([]byte(C.GoString(iceCandidateString)), &candidate); err != nil {
     return false
@@ -171,11 +177,13 @@ func AddIceCandidate(iceCandidateString *C.char) bool {
     panic(err)
   }
 
+  pc_channel <- peerConnection
   return true
 }
 
 //export CloseConnection
 func CloseConnection() bool {
+  peerConnection := <-pc_channel 
   if err := peerConnection.Close(); err != nil {
     panic(err)
   }
