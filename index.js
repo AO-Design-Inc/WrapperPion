@@ -5,7 +5,7 @@ const fs = require('fs');
 
 var isWin = process.platform === "win32";
 var isDarwin = process.platform === "darwin";
-var isElectron = (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron)
+//var isElectron = (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron)
 
 /* adapt ffi code
  * 
@@ -22,11 +22,9 @@ if (isWin) {
 	libpath = __dirname + "/go-src/pion_handler.so";
 }
 
-if (isElectron) {
-  let possibleLibPath = libpath.replace('app.asar', 'app.asar.unpacked')
-  if (fs.existsSync(possibleLibPath)) {
-    libpath = possibleLibPath
-  }
+let possibleLibPath = libpath.replace('app.asar', 'app.asar.unpacked')
+if (fs.existsSync(possibleLibPath)) {
+  libpath = possibleLibPath
 }
 
 var pionjs = ffi.Library(libpath, {
